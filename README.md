@@ -25,7 +25,7 @@ Minpro-2-DDP-ManajemenBankSampah/
 └── assets/                    # Folder khusus untuk seluruh media & gambar
     ├── flowchart.png          # Gambar diagram alur program (flowchart)
     │
-    └── screenshots/           # Folder khusus hasil tangkapan layar (screenshot)
+    └── screenshot/           # Folder khusus hasil tangkapan layar (screenshot)
         ├── 01-login.png       # Screenshot tampilan login (pwinput)
         ├── 02-menu-admin.png  # Screenshot tampilan menu admin
         ├── 03-menu-user.png   # Screenshot tampilan menu user/nasabah
@@ -133,7 +133,7 @@ def login():
 ```
 
 > **Dokumentasi Output Tampilan Login:**  
-> ![Screenshot Login](assets/screenshots/01-login.png)
+> ![Screenshot Login](assets/screenshot/01-login.png)
 
 ---
 
@@ -171,7 +171,7 @@ def menu_admin(username, nama):
 ```
 
 > **Dokumentasi Output Menu Admin:**  
-> ![Screenshot Menu Admin](assets/screenshots/02-menu-admin.png)
+> ![Screenshot Menu Admin](assets/screenshot/02-menu-admin.png)
 
 #### B. Dashboard Nasabah / Warga (`menu_user`)
 ```python
@@ -200,7 +200,7 @@ def menu_user(username, nama):
 ```
 
 > **Dokumentasi Output Menu Nasabah:**  
-> ![Screenshot Menu Nasabah](assets/screenshots/03-menu-user.png)
+> ![Screenshot Menu Nasabah](assets/screenshot/03-menu-user.png)
 
 ---
 
@@ -291,7 +291,7 @@ Total Poin  : 1250 poin
 ```
 
 > **Dokumentasi Output Tampilan Tabel PrettyTable:**  
-> ![Screenshot Output Tabel CRUD](assets/screenshots/04-tabel-crud.png)
+> ![Screenshot Output Tabel CRUD](assets/screenshot/04-tabel-crud.png)
 
 #### C. Update (`ubah_setoran`)
 Admin dapat memperbarui rincian transaksi data setoran (nama, konfirmasi ubah jenis sampah, dan konfirmasi ubah berat sampah) dengan kalkulasi ulang poin otomatis sesuai tarif yang berlaku di `HARGA_SAMPAH`.
@@ -392,7 +392,7 @@ def input_int_positif(pesan):
 2. **Filter Logika `nilai <= 0`**: Memastikan bobot sampah serta nomor indeks data yang diinput selalu bernilai positif murni (> 0), mencegah anomali data bernilai minus atau nol.
 
 > **Dokumentasi Output Respons Validasi Error & Anti-Minus:**  
-> ![Screenshot Validasi Error](assets/screenshots/05-validasi.png)
+> ![Screenshot Validasi Error](assets/screenshot/05-validasi.png)
 
 ---
 
