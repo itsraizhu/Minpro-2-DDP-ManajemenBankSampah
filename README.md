@@ -613,5 +613,3 @@ Sistem pada `main.py` dan `ddp.py` telah dilengkapi dua akun bawaan dalam dictio
 | **Nasabah / Warga** | `budi` | `123` | Budi Santoso | Akses terbatas nasabah: hanya dapat mencatat setoran atas nama akun sendiri, melihat mutasi riwayat setoran pribadi, dan melihat katalog tarif poin sampah. |
 
 ---
-
-*Dikembangkan dengan dedikasi untuk Tugas Praktikum Dasar-Dasar Pemrograman (DDP).*
