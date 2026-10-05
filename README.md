@@ -9,7 +9,7 @@
 - **NIM** : 2609116062
 - **Mata Kuliah** : Dasar-Dasar Pemrograman (DDP)
 - **Tugas** : Mini Project 2
-- **File Program** : `main.py` (dan `ddp.py`)
+- **File Program** : `main.py`
 - **Bahasa Pemrograman** : Python 3.x
 
 ---
