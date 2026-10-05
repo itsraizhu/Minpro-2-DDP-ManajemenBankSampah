@@ -1,13 +1,15 @@
 # Minpro-2-DDP-ManajemenBankSampah
 
+> **Sistem Manajemen Bank Sampah Berbasis CLI Python dengan Autentikasi Multi-Role, Manajemen CRUD Terstruktur, dan Validasi Data Terproteksi.**
+
 ---
 
 ### Informasi Pengembang
 - **Nama** : M. Fairuz Firerza Aliushami
 - **NIM** : 2609116062
-- **Praktikum** : Dasar-Dasar Pemrograman (DDP)
+- **Mata Kuliah** : Dasar-Dasar Pemrograman (DDP)
 - **Tugas** : Mini Project 2
-- **File Program** : `main.py`
+- **File Program** : `main.py` (dan `ddp.py`)
 - **Bahasa Pemrograman** : Python 3.x
 
 ---
@@ -40,11 +42,22 @@ Minpro-2-DDP-ManajemenBankSampah/
 2. [Deskripsi Singkat Program](#deskripsi-singkat-program)
 3. [Pembaruan Utama dari Mini Project 1](#pembaruan-utama-dari-mini-project-1)
 4. [Alur Program & Flowchart](#alur-program--flowchart)
-5. [Dokumentasi Fitur & Potongan Kode](#dokumentasi-fitur--potongan-kode)
-   - [1. Fitur Autentikasi & Login Multi-Role](#1-fitur-autentikasi--login-multi-role)
-   - [2. Sistem Multi-Role & Dashboard Menu](#2-sistem-multi-role--dashboard-menu)
-   - [3. Manajemen Setoran Sampah (Operasi CRUD)](#3-manajemen-setoran-sampah-operasi-crud)
-   - [4. Validasi Input Anti-Minus & Error Handling](#4-validasi-input-anti-minus--error-handling)
+5. [Bedah Kode Lengkap & Penjelasan Baris per Baris](#bedah-kode-lengkap--penjelasan-baris-per-baris)
+   - [5.1 Modul & Library Eksternal](#51-modul--library-eksternal)
+   - [5.2 Struktur Data Global (Basis Data In-Memory)](#52-struktur-data-global-basis-data-in-memory)
+   - [5.3 Fungsi Utilitas Pembersihan Layar](#53-fungsi-utilitas-pembersihan-layar-hapus_layar)
+   - [5.4 Fungsi Validasi Input Numerik & Anti-Minus](#54-fungsi-validasi-input-numerik--anti-minus)
+   - [5.5 Fungsi Katalog & Pemilihan Jenis Sampah](#55-fungsi-katalog--pemilihan-jenis-sampah-pilih_jenis_sampah)
+   - [5.6 Fitur Autentikasi Pengguna (`login`)](#56-fitur-autentikasi-pengguna-login)
+   - [5.7 Operasi Manajemen Data Setoran (CRUD)](#57-operasi-manajemen-data-setoran-crud)
+     - [A. Tambah Setoran (`Create`)](#a-tambah-setoran-create)
+     - [B. Lihat Riwayat Setoran (`Read`)](#b-lihat-riwayat-setoran-read)
+     - [C. Ubah Data Setoran (`Update`)](#c-ubah-data-setoran-update)
+     - [D. Hapus Data Setoran (`Delete`)](#d-hapus-data-setoran-delete)
+   - [5.8 Navigasi Menu Dashboard Multi-Role](#58-navigasi-menu-dashboard-multi-role)
+     - [A. Menu Administrator (`menu_admin`)](#a-menu-administrator-menu_admin)
+     - [B. Menu Nasabah / Warga (`menu_user`)](#b-menu-nasabah--warga-menu_user)
+   - [5.9 Fungsi Pengendali Utama (`main`)](#59-fungsi-pengendali-utama-main)
 6. [Penjelasan Nilai Tambah & Library](#penjelasan-nilai-tambah--library)
 7. [Daftar Akun Pengguna Default](#daftar-akun-pengguna-default)
 
@@ -108,13 +121,152 @@ Dokumentasi visual bagan alur resmi program dapat dilihat pada file gambar berik
 
 ---
 
-## Dokumentasi Fitur & Potongan Kode
+## Bedah Kode Lengkap & Penjelasan Baris per Baris
 
-Struktur kode di bawah ini diambil persis dari file implementasi [`main.py`](main.py):
+Bagian ini menyajikan seluruh potongan kode sumber yang digunakan pada program beserta analisis fungsi dan logika kerjanya secara mendetail.
 
-### 1. Fitur Autentikasi & Login Multi-Role
+### 5.1 Modul & Library Eksternal
 
-Fungsi `login()` bertugas menyaring akses masuk ke sistem. Demi melindungi privasi pengguna dari intipan layar (*shoulder surfing*), modul `pwinput.pwinput()` digunakan untuk menyamarkan input kata sandi.
+```python
+import os
+import pwinput
+from prettytable import PrettyTable
+```
+
+**Penjelasan Kode:**
+- `import os`: Mengimpor modul bawaan Python (*standard library*) untuk berinteraksi dengan sistem operasi komputer tuan rumah, khususnya untuk mengeksekusi instruksi pembersihan layar konsol.
+- `import pwinput`: Mengimpor library pihak ketiga yang bertindak serupa fungsi `input()`, namun menyembunyikan karakter teks yang diketikkan pengguna dengan karakter visual bintang (`*`).
+- `from prettytable import PrettyTable`: Mengimpor kelas `PrettyTable` untuk merender struktur data matriks (baris dan kolom) menjadi tabel grafis berbasis ASCII di terminal.
+
+---
+
+### 5.2 Struktur Data Global (Basis Data In-Memory)
+
+Program mengandalkan tiga variabel global untuk menyimpan entitas data secara dinamis dalam memori kerja (*RAM*):
+
+```python
+USERS = {
+    "admin": {"password": "admin123", "role": "admin", "nama": "Administrator"},
+    "budi": {"password": "123", "role": "user", "nama": "Budi Santoso"}
+}
+
+HARGA_SAMPAH = {
+    "1": {"nama": "Plastik", "poin_per_kg": 500},
+    "2": {"nama": "Kertas", "poin_per_kg": 300},
+    "3": {"nama": "Logam", "poin_per_kg": 1000},
+    "4": {"nama": "Kaca", "poin_per_kg": 400}
+}
+
+data_setoran = [
+    {"nama": "Budi Santoso", "jenis": "Plastik", "berat": 2.5, "poin": 1250, "user": "budi"}
+]
+```
+
+**Penjelasan Struktur Data:**
+1. **`USERS` (Nested Dictionary)**:
+   - Kunci terluar (*key*) merupakan `username` unik akun.
+   - Nilai (*value*) berupa dictionary bertingkat yang menyimpan atribut pengguna:
+     - `password`: String kata sandi autentikasi.
+     - `role`: Hak akses otorisasi (`admin` untuk pengurus, `user` untuk nasabah).
+     - `nama`: Nama lengkap pemilik akun untuk keperluan sapaan personal.
+2. **`HARGA_SAMPAH` (Nested Dictionary)**:
+   - Kunci berupa string numerik (`"1"` hingga `"4"`) yang mewakili kode pilihan menu.
+   - Menyimpan atribut jenis sampah (`nama`) dan nilai tukar poin per kilogram (`poin_per_kg`).
+3. **`data_setoran` (List of Dictionaries)**:
+   - Berfungsi sebagai tabel utama transaksi setoran.
+   - Menggunakan tipe `list` yang bersifat *mutable* (dapat ditambah, diubah, dan dihapus).
+   - Setiap elemen di dalamnya merepresentasikan satu dokumen transaksi dengan atribut: `nama` (nama warga), `jenis` (kategori sampah), `berat` (kuantitas dalam kg), `poin` (total poin didapat), dan `user` (identitas penyetor / hak kepemilikan data).
+
+---
+
+### 5.3 Fungsi Utilitas Pembersihan Layar (`hapus_layar`)
+
+```python
+def hapus_layar():
+    os.system('cls' if os.name == 'nt' else 'clear')
+```
+
+**Penjelasan Logika:**
+- Fungsi ini mengimplementasikan ekspresi ternary:
+  - Jika `os.name == 'nt'` (lingkungan Windows), maka fungsi memanggil perintah `os.system('cls')`.
+  - Jika selain Windows (Linux/macOS yang berbasis POSIX), fungsi memanggil `os.system('clear')`.
+- Tujuannya adalah memastikan terminal selalu rapi dan bersih saat berganti halaman menu, memberikan pengalaman antarmuka (*User Experience*) yang profesional di berbagai sistem operasi.
+
+---
+
+### 5.4 Fungsi Validasi Input Numerik & Anti-Minus
+
+Untuk menjamin keabsahan data kuantitatif, program menggunakan dua fungsi validasi perulangan tak hingga (`while True`) dengan blok proteksi `try-except`:
+
+#### A. Input Nilai Desimal Positif (`input_angka_positif`)
+```python
+def input_angka_positif(pesan):
+    while True:
+        try:
+            nilai = float(input(pesan))
+            if nilai <= 0:
+                print("Input tidak boleh 0 atau minus!")
+            else:
+                return nilai
+        except ValueError:
+            print("Input harus berupa angka!")
+```
+
+**Penjelasan Logika:**
+1. `while True`: Membuka perulangan yang hanya akan berhenti (`return`) apabila pengguna telah menginput data yang sepenuhnya valid.
+2. `float(input(pesan))`: Berusaha mengonversi teks input menjadi bilangan riil/desimal (misalnya: `2.5`).
+3. `except ValueError`: Jika konversi gagal karena pengguna mengetik huruf atau simbol (misal `abc`), alur dialihkan ke blok ini, mencetak pesan peringatan, dan meminta input ulang tanpa membuat program berhenti (*crash*).
+4. `if nilai <= 0`: Mengevaluasi apakah angka bernilai nol atau minus. Jika ya, nilai ditolak dengan pesan `Input tidak boleh 0 atau minus!`.
+5. `return nilai`: Mengembalikan nilai angka yang telah lolos seluruh tahapan verifikasi.
+
+#### B. Input Nilai Bilangan Bulat Positif (`input_int_positif`)
+```python
+def input_int_positif(pesan):
+    while True:
+        try:
+            nilai = int(input(pesan))
+            if nilai <= 0:
+                print("Angka harus lebih dari 0!")
+            else:
+                return nilai
+        except ValueError:
+            print("Input harus berupa angka bulat!")
+```
+
+**Penjelasan Logika:**
+- Mirip dengan `input_angka_positif()`, fungsi ini digunakan khusus untuk nomor urutan baris data pada proses pengubahan (*Update*) dan penghapusan (*Delete*). Nilai dikonversi menggunakan fungsi `int()` dan menolak input desimal maupun karakter non-angka.
+
+> **Dokumentasi Output Respons Validasi Error & Anti-Minus:**  
+> ![Screenshot Validasi Error](assets/screenshots/05-validasi.png)
+
+---
+
+### 5.5 Fungsi Katalog & Pemilihan Jenis Sampah (`pilih_jenis_sampah`)
+
+```python
+def pilih_jenis_sampah():
+    print("PILIH JENIS SAMPAH")
+    tabel = PrettyTable()
+    tabel.field_names = ["Kode", "Jenis Sampah", "Poin / kg"]
+    for kode in HARGA_SAMPAH:
+        tabel.add_row([kode, HARGA_SAMPAH[kode]["nama"], HARGA_SAMPAH[kode]["poin_per_kg"]])
+    print(tabel)
+    while True:
+        pilihan = input("Pilih kode jenis sampah (1-4): ")
+        if pilihan in HARGA_SAMPAH:
+            return HARGA_SAMPAH[pilihan]["nama"], HARGA_SAMPAH[pilihan]["poin_per_kg"]
+        print("Pilihan tidak valid, pilih 1-4!")
+```
+
+**Penjelasan Logika:**
+1. Menginisialisasi objek tabel dengan header kolom `["Kode", "Jenis Sampah", "Poin / kg"]`.
+2. Melakukan iterasi terhadap kunci dictionary `HARGA_SAMPAH` menggunakan `for kode in HARGA_SAMPAH:`, menambahkan setiap baris ke tabel, lalu mencetaknya.
+3. Melakukan validasi input pilihan dengan klausa `if pilihan in HARGA_SAMPAH:`.
+4. Jika pilihan sesuai (antara `"1"` sampai `"4"`), fungsi mengembalikan pasangan nilai (*tuple packing*) berupa nama jenis sampah dan tarif poin per kilogramnya: `return HARGA_SAMPAH[pilihan]["nama"], HARGA_SAMPAH[pilihan]["poin_per_kg"]`.
+
+---
+
+### 5.6 Fitur Autentikasi Pengguna (`login`)
 
 ```python
 def login():
@@ -132,85 +284,25 @@ def login():
         return None, None, None
 ```
 
+**Penjelasan Logika:**
+1. Membersihkan layar konsol dan meminta input nama pengguna (`username`).
+2. Meminta kata sandi dengan modul `pwinput.pwinput()` yang otomatis menyamarkan karakter masukan.
+3. **Pengecekan Keamanan**:
+   - `username in USERS`: Memeriksa keberadaan nama akun dalam dictionary.
+   - `USERS[username]["password"] == password`: Memastikan kecocokan kata sandi.
+4. Jika autentikasi sukses, fungsi mengembalikan nilai tuple `(username, role, nama)`.
+5. Jika salah, program mencetak peringatan kesalahan, menahan tampilan dengan `input("Tekan Enter untuk mencoba lagi...")`, dan mengembalikan nilai `(None, None, None)` untuk memicu perulangan login kembali.
+
 > **Dokumentasi Output Tampilan Login:**  
 > ![Screenshot Login](assets/screenshots/01-login.png)
 
 ---
 
-### 2. Sistem Multi-Role & Dashboard Menu
+### 5.7 Operasi Manajemen Data Setoran (CRUD)
 
-Sistem memisahkan alur kerja melalui fungsi `menu_admin()` dan `menu_user()` berdasarkan parameter role yang dikembalikan oleh fungsi `login()`.
+Implementasi pengolahan data setoran sampah dibangun dengan modularitas penuh:
 
-#### A. Dashboard Administrator (`menu_admin`)
-```python
-def menu_admin(username, nama):
-    while True:
-        print("MENU ADMIN BANK SAMPAH", nama)
-        print("1. Tambah Setoran Sampah (Create)")
-        print("2. Lihat Semua Data Setoran (Read)")
-        print("3. Ubah Data Setoran (Update)")
-        print("4. Hapus Data Setoran (Delete)")
-        print("5. Logout")
-        
-        pilihan = input("Pilih menu (1-5): ")
-        hapus_layar()
-        
-        if pilihan == "1":
-            tambah_setoran(username, True)
-        elif pilihan == "2":
-            lihat_setoran()
-        elif pilihan == "3":
-            ubah_setoran()
-        elif pilihan == "4":
-            hapus_setoran()
-        elif pilihan == "5":
-            print("Logout berhasil.")
-            break
-        else:
-            print("Pilihan menu tidak valid!")
-```
-
-> **Dokumentasi Output Menu Admin:**  
-> ![Screenshot Menu Admin](assets/screenshots/02-menu-admin.png)
-
-#### B. Dashboard Nasabah / Warga (`menu_user`)
-```python
-def menu_user(username, nama):
-    while True:
-        print("NASABAH / WARGA -", nama)
-        print("1. Tambah Setoran Saya")
-        print("2. Lihat Riwayat Setoran Saya")
-        print("3. Lihat Daftar Poin Sampah")
-        print("4. Logout")
-        
-        pilihan = input("Pilih menu (1-4): ")
-        hapus_layar()
-        
-        if pilihan == "1":
-            tambah_setoran(username, False)
-        elif pilihan == "2":
-            lihat_setoran(username)
-        elif pilihan == "3":
-            pilih_jenis_sampah()
-        elif pilihan == "4":
-            print("Logout berhasil.")
-            break
-        else:
-            print("Pilihan menu tidak valid!")
-```
-
-> **Dokumentasi Output Menu Nasabah:**  
-> ![Screenshot Menu Nasabah](assets/screenshots/03-menu-user.png)
-
----
-
-### 3. Manajemen Setoran Sampah (Operasi CRUD)
-
-Manajemen data transaksi setoran sampah pada `main.py` mengimplementasikan empat pilar utama pengolahan data:
-
-#### A. Create (`tambah_setoran`)
-Menambahkan data transaksi setoran ke dalam list koleksi `data_setoran`. Sistem mengecek parameter `is_admin` untuk menentukan apakah nama warga diinput bebas atau dikunci otomatis sesuai akun nasabah login.
-
+#### A. Tambah Setoran (`Create`)
 ```python
 def tambah_setoran(username_login, is_admin):
     print("TAMBAH SETORAN SAMPAH")
@@ -240,9 +332,18 @@ def tambah_setoran(username_login, is_admin):
     print("Data setoran berhasil ditambahkan!")
 ```
 
-#### B. Read (`lihat_setoran`)
-Membaca dan menampilkan isi data setoran dalam format tabel `PrettyTable`. Fungsi ini mendukung penyaringan otomatis: jika dipanggil dengan argumen `username_filter`, hanya transaksi milik pengguna tersebut yang ditampilkan; jika tanpa filter (`None`), seluruh data transaksi setoran akan disajikan.
+**Penjelasan Logika:**
+- **Pembedaan Hak Akses**:
+  - Jika `is_admin == True`, admin memiliki hak memasukkan nama warga siapapun secara fleksibel dengan validasi string tidak boleh kosong. Field kepemilikan ditandai dengan `pemilik = "admin"`.
+  - Jika `is_admin == False` (Nasabah), nama warga otomatis diambil dari profil login `USERS[username_login]["nama"]` dan kepemilikan ditandai dengan `username_login` untuk mencegah klaim data oleh akun lain.
+- Memanggil `pilih_jenis_sampah()` untuk mendapatkan nama jenis sampah dan tarif poin.
+- Memanggil `input_angka_positif()` untuk meminta nilai berat sampah yang terverifikasi.
+- Menghitung poin: `poin_didapat = int(berat * poin_rate)`.
+- Mengemas transaksi dalam bentuk dictionary `data_baru` lalu memasukkannya ke dalam list global dengan perintah `data_setoran.append(data_baru)`.
 
+---
+
+#### B. Lihat Riwayat Setoran (`Read`)
 ```python
 def lihat_setoran(username_filter=None):
     print("DAFTAR SETORAN SAMPAH")
@@ -278,6 +379,14 @@ def lihat_setoran(username_filter=None):
     return True
 ```
 
+**Penjelasan Logika:**
+- **Mekanisme Filter**:
+  - Parameter opsional `username_filter` bernilai default `None`.
+  - Jika diisi (pada dashboard user), program menyaring data dengan membandingkan `item["user"] == username_filter`, sehingga nasabah hanya melihat transaksinya sendiri.
+  - Jika `None` (pada dashboard admin), seluruh data di `data_setoran` ditampilkan.
+- **Pengecekan Ketersediaan Data**: Jika `len(list_tampil) == 0`, program mencetak informasi `"Belum ada data setoran."` dan mengembalikan nilai boolean `False`.
+- **Kalkulasi Akumulatif**: Program mengiterasi list data yang tampil, memasukkan baris ke dalam `PrettyTable`, serta mengakumulasikan `total_berat` dan `total_poin` untuk disajikan di bawah tabel.
+
 **Simulasi Output Tampilan Tabel:**
 ```text
 DAFTAR SETORAN SAMPAH
@@ -293,9 +402,9 @@ Total Poin  : 1250 poin
 > **Dokumentasi Output Tampilan Tabel PrettyTable:**  
 > ![Screenshot Output Tabel CRUD](assets/screenshots/04-tabel-crud.png)
 
-#### C. Update (`ubah_setoran`)
-Admin dapat memperbarui rincian transaksi data setoran (nama, konfirmasi ubah jenis sampah, dan konfirmasi ubah berat sampah) dengan kalkulasi ulang poin otomatis sesuai tarif yang berlaku di `HARGA_SAMPAH`.
+---
 
+#### C. Ubah Data Setoran (`Update`)
 ```python
 def ubah_setoran():
     if lihat_setoran() == False:
@@ -333,9 +442,19 @@ def ubah_setoran():
         print("Nomor data tidak ditemukan!")
 ```
 
-#### D. Delete (`hapus_setoran`)
-Admin dapat menghapus baris transaksi sampah dari memori menggunakan instruksi `del` berdasarkan verifikasi indeks data yang valid.
+**Penjelasan Logika:**
+1. Memeriksa ketersediaan data terlebih dahulu dengan `if lihat_setoran() == False: return`. Jika kosong, fungsi langsung dihentikan.
+2. Meminta nomor urut baris data melalui `input_int_positif()`, kemudian mengonversinya ke sistem penomoran indeks Python (berbasis 0) melalui rumus: `index = nomor_input - 1`.
+3. Memastikan indeks berada dalam rentang valid: `index >= 0 and index < len(data_setoran)`.
+4. Menyediakan opsi pembaruan fleksibel:
+   - **Nama**: Jika dikosongkan (langsung tekan Enter), nama lama dipertahankan.
+   - **Jenis Sampah**: Jika pengguna memilih `'y'`, jenis baru dipilih dan `poin_rate` disesuaikan. Jika tidak diubah, program mencari rate poin yang sesuai dengan jenis sampah yang sedang aktif dari `HARGA_SAMPAH`.
+   - **Berat Sampah**: Jika pengguna memilih `'y'`, berat baru diinput.
+5. Menghitung kembali total poin secara otomatis berdasarkan berat dan tarif poin yang berlaku: `item["poin"] = int(item["berat"] * poin_rate)`.
 
+---
+
+#### D. Hapus Data Setoran (`Delete`)
 ```python
 def hapus_setoran():
     if lihat_setoran() == False:
@@ -353,46 +472,120 @@ def hapus_setoran():
         print("Nomor data tidak ditemukan!")
 ```
 
+**Penjelasan Logika:**
+1. Menampilkan seluruh data setoran dan membatalkan eksekusi jika data masih kosong.
+2. Meminta nomor urutan baris data yang ingin dihapus.
+3. Menghitung indeks list (`index = nomor_input - 1`).
+4. Jika indeks valid, sistem menyimpan nama pemilik data ke variabel `nama_terhapus`, lalu menghapus item tersebut dari memori list menggunakan instruksi `del data_setoran[index]`.
+5. Menampilkan konfirmasi keberhasilan penghapusan data.
+
 ---
 
-### 4. Validasi Input Anti-Minus & Error Handling
+### 5.8 Navigasi Menu Dashboard Multi-Role
 
-Untuk memastikan data kuantitatif selalu valid dan melindungi program dari error input yang tidak diharapkan, `main.py` menyediakan dua fungsi pengamanan:
+Program menerapkan perulangan berbasis *event-loop* (`while True`) untuk menjaga agar menu terus aktif hingga pengguna memutuskan untuk logout.
 
-#### A. Input Nilai Desimal Positif (`input_angka_positif`)
+#### A. Menu Administrator (`menu_admin`)
 ```python
-def input_angka_positif(pesan):
+def menu_admin(username, nama):
     while True:
-        try:
-            nilai = float(input(pesan))
-            if nilai <= 0:
-                print("Input tidak boleh 0 atau minus!")
-            else:
-                return nilai
-        except ValueError:
-            print("Input harus berupa angka!")
+        print("MENU ADMIN BANK SAMPAH", nama)
+        print("1. Tambah Setoran Sampah (Create)")
+        print("2. Lihat Semua Data Setoran (Read)")
+        print("3. Ubah Data Setoran (Update)")
+        print("4. Hapus Data Setoran (Delete)")
+        print("5. Logout")
+        
+        pilihan = input("Pilih menu (1-5): ")
+        hapus_layar()
+        
+        if pilihan == "1":
+            tambah_setoran(username, True)
+        elif pilihan == "2":
+            lihat_setoran()
+        elif pilihan == "3":
+            ubah_setoran()
+        elif pilihan == "4":
+            hapus_setoran()
+        elif pilihan == "5":
+            print("Logout berhasil.")
+            break
+        else:
+            print("Pilihan menu tidak valid!")
 ```
 
-#### B. Input Nilai Bilangan Bulat Positif (`input_int_positif`)
+**Penjelasan Logika:**
+- Menampilkan 5 pilihan kontrol CRUD penuh.
+- Setiap pilihan dibersihkan layarnya terlebih dahulu dengan `hapus_layar()`.
+- Opsi `5` memutus perulangan menu dengan pernyataan `break`, mengembalikan alur program ke siklus login utama.
+
+> **Dokumentasi Output Menu Admin:**  
+> ![Screenshot Menu Admin](assets/screenshots/02-menu-admin.png)
+
+---
+
+#### B. Menu Nasabah / Warga (`menu_user`)
 ```python
-def input_int_positif(pesan):
+def menu_user(username, nama):
     while True:
-        try:
-            nilai = int(input(pesan))
-            if nilai <= 0:
-                print("Angka harus lebih dari 0!")
-            else:
-                return nilai
-        except ValueError:
-            print("Input harus berupa angka bulat!")
+        print("NASABAH / WARGA -", nama)
+        print("1. Tambah Setoran Saya")
+        print("2. Lihat Riwayat Setoran Saya")
+        print("3. Lihat Daftar Poin Sampah")
+        print("4. Logout")
+        
+        pilihan = input("Pilih menu (1-4): ")
+        hapus_layar()
+        
+        if pilihan == "1":
+            tambah_setoran(username, False)
+        elif pilihan == "2":
+            lihat_setoran(username)
+        elif pilihan == "3":
+            pilih_jenis_sampah()
+        elif pilihan == "4":
+            print("Logout berhasil.")
+            break
+        else:
+            print("Pilihan menu tidak valid!")
 ```
 
-**Mekanisme Pengamanan:**
-1. **Blok `try-except ValueError`**: Mengantisipasi kesalahan ketik ketika pengguna memasukkan karakter huruf, simbol, atau input kosong pada prompt numerik. Program menangkap pengecualian tersebut dan menampilkan pesan peringatan tanpa menghentikan program (*anti-crash*).
-2. **Filter Logika `nilai <= 0`**: Memastikan bobot sampah serta nomor indeks data yang diinput selalu bernilai positif murni (> 0), mencegah anomali data bernilai minus atau nol.
+**Penjelasan Logika:**
+- Menu dirancang lebih sederhana dan aman khusus untuk nasabah:
+  - Pilihan `1` mengeksekusi `tambah_setoran(username, False)` sehingga nasabah hanya dapat mencatat setoran atas nama dirinya sendiri.
+  - Pilihan `2` mengeksekusi `lihat_setoran(username)` untuk melihat riwayat tabungan personal.
+  - Pilihan `3` mengeksekusi `pilih_jenis_sampah()` sebagai katalog referensi tarif poin.
+  - Pilihan `4` melakukan logout dengan pernyataan `break`.
 
-> **Dokumentasi Output Respons Validasi Error & Anti-Minus:**  
-> ![Screenshot Validasi Error](assets/screenshots/05-validasi.png)
+> **Dokumentasi Output Menu Nasabah:**  
+> ![Screenshot Menu Nasabah](assets/screenshots/03-menu-user.png)
+
+---
+
+### 5.9 Fungsi Pengendali Utama (`main`)
+
+```python
+def main():
+    while True:
+        username, role, nama = login()
+        if username != None:
+            hapus_layar()
+            print("Selamat datang,", nama)
+            if role == "admin":
+                menu_admin(username, nama)
+            elif role == "user":
+                menu_user(username, nama)
+
+main()
+```
+
+**Penjelasan Logika:**
+1. `while True`: Menjaga agar siklus program terus hidup. Ketika pengguna selesai melakukan logout dari suatu sesi menu, program otomatis kembali memunculkan layar login awal.
+2. `username, role, nama = login()`: Memanggil fungsi login dan menerima 3 nilai kembalian.
+3. `if username != None`: Memverifikasi bahwa proses login berhasil.
+4. `if role == "admin"`: Mengarahkan alur ke dashboard Administrator.
+5. `elif role == "user"`: Mengarahkan alur ke dashboard Nasabah / Warga.
+6. `main()`: Baris instruksi terakhir yang bertugas memicu dan memulai seluruh jalannya program Python sejak file dieksekusi.
 
 ---
 
@@ -403,7 +596,7 @@ Penggunaan struktur penanganan eksepsi `try-except` pada fungsi input numerik me
 
 ### 2. Peran 3 Library Utama Python
 
-| Nama Library | Kategori | Peran & Implementasi dalam Kode (`main.py`) |
+| Nama Library | Kategori | Peran & Implementasi dalam Kode (`main.py` / `ddp.py`) |
 | :--- | :--- | :--- |
 | **`os`** | Standard Library Python | Mengatur manipulasi sistem operasi dengan memanggil perintah `cls` (pada Windows / NT) atau `clear` (pada sistem POSIX seperti Linux dan macOS) melalui fungsi pembantu `hapus_layar()`. Hal ini menjaga tampilan antarmuka CLI tetap bersih dan terfokus pada setiap pergantian menu. |
 | **`pwinput`** | External Library | Menyediakan fungsi `pwinput.pwinput()` pada proses login pengguna. Berbeda dengan fungsi bawaan `input()` yang menampilkan teks mentah secara terbuka di layar terminal, `pwinput` menggantikan karakter sandi dengan tanda bintang (`*`), mencegah kebocoran informasi kredensial (*credential leak*). |
@@ -413,7 +606,7 @@ Penggunaan struktur penanganan eksepsi `try-except` pada fungsi input numerik me
 
 ## Daftar Akun Pengguna Default
 
-Sistem pada `main.py` telah dilengkapi dua akun bawaan dalam dictionary `USERS` untuk memfasilitasi pengujian multi-role:
+Sistem pada `main.py` dan `ddp.py` telah dilengkapi dua akun bawaan dalam dictionary `USERS` untuk memfasilitasi pengujian multi-role:
 
 | Role Pengguna | Username | Password | Nama Lengkap | Lingkup Hak Akses |
 | :--- | :--- | :--- | :--- | :--- |
