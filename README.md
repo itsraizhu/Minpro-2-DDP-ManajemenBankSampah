@@ -1,7 +1,5 @@
 # Minpro-2-DDP-ManajemenBankSampah
 
-> **Sistem Manajemen Bank Sampah Berbasis CLI Python dengan Autentikasi Multi-Role, Manajemen CRUD Terstruktur, dan Validasi Data Terproteksi.**
-
 ---
 
 ### Informasi Pengembang
